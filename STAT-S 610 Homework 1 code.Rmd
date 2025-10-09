@@ -1,0 +1,85 @@
+---
+title: "STAT-S 610 Homework 1"
+author: "Nahid Hasan Sagar"
+date: "2025-09-05"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## STAT-S 610 Homework 1
+
+# Loading necessary packages
+```{r}
+  library(ggplot2)
+  library(wesanderson)
+```
+
+```{r}
+  typeof(wes_palettes)
+  typeof(names(wes_palettes))
+  typeof(wes_palettes['AsteroidCity2'])
+```
+# Role of pal[1] and pal[2]
+  So, in the code below pal is taking three color from wes_palettes and among those three color we are using two color to make a gradient on the following codes. Where pal[1] is the lower color middle one is while and higher color is pal[2]. So, pal[1] and pal[2] are used for setting lower and upper color in the gradient of a three color gradient.
+```{r}
+  data(heatmap)
+    pal <- wes_palette("Rushmore", 3, type = "discrete")
+    ggplot(heatmap, aes(x = X2, y = X1, fill = value)) +
+        geom_tile() +
+        scale_fill_gradient2(
+            low = pal[1],
+            mid = "white",
+            high = pal[2],
+        ) +
+        scale_x_discrete(expand = c(0, 0)) +
+        scale_y_discrete(expand = c(0, 0)) + coord_equal()
+```
+# Using for loop for the
+```{r}
+  for (i in 1:length(wes_palettes)) {
+    pal <- wes_palette(names(wes_palettes)[i], 2, type = "discrete")
+    print(ggplot(heatmap, aes(x = X2, y = X1, fill = value)) +
+        geom_tile() +
+        scale_fill_gradient2(
+            low = pal[1],
+            mid = "white",
+            high = pal[2],
+        ) +
+        scale_x_discrete(expand = c(0, 0)) +
+        scale_y_discrete(expand = c(0, 0)) + coord_equal())
+  }
+```
+# With three different color
+```{r}
+  for (i in 1:length(wes_palettes)) {
+    pal <- wes_palette(names(wes_palettes)[i], 3, type = "discrete")
+    print(ggplot(heatmap, aes(x = X2, y = X1, fill = value)) +
+        geom_tile() +
+        scale_fill_gradient2(
+            low = pal[1],
+            mid = pal[2],
+            high = pal[3],
+        ) +
+        scale_x_discrete(expand = c(0, 0)) +
+        scale_y_discrete(expand = c(0, 0)) + coord_equal())
+  }
+```
+# With one pair of color
+```{r}
+count <- 0
+  for (i in 1:length(wes_palettes)) {
+    pal <- wes_palette(names(wes_palettes)[i], 1, type = "discrete")
+    for (j in 1:length(wes_palettes)) {
+      if (i == j) {
+        next
+      }
+      else {
+        pal2 <- wes_palette(names(wes_palettes)[j], 1, type = "discrete")
+        print(ggplot(heatmap, aes(x = X2, y = X1, fill = value)) + geom_tile() + scale_fill_gradient2( low = pal, mid = "White", high = pal2, ) + scale_x_discrete(expand = c(0, 0)) + scale_y_discrete(expand = c(0, 0)) + coord_equal())
+        }
+    }
+  }
+```

@@ -1,0 +1,199 @@
+---
+title: "STAT-S 610 Homework 5"
+author: "Nahid Hasan Sagar"
+date: "2025-10-08"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Homework 5: Functions to be debugged
+
+## 1. Berhu penalty
+```{r}
+berhu <- function(x, delta) {
+    if(abs(x) <= delta) {
+        abs(x)
+    } else {
+        ((x^2 / 2) * delta) + delta / 2
+    }
+}
+
+berhu(1,1) ## should be 1
+berhu(.5, 1) ## should be .5
+berhu(2, 1) ## should be 2.5
+xseq = seq(-3, 3, length.out = 200)
+plot(sapply(xseq, berhu, 1) ~ xseq, type = 'l')
+```
+
+So, there were two problem with this function.
+
+1. For `berhu(1,1)` the output should be 1 but initially in the if condition there was no equal sign. So it was going to the else block and running that block of codes. So applying an `=` after `<` resolve the problem.
+
+2. This part was a little tricky. In the else condition the code was reading each part separately. So, applying appropriate parenthesis resolve that problem.
+
+
+## 2. Trimmed mean
+```{r}
+trimmed_mean <- function(x, trim) {
+    n = length(x)
+    ## the number to trim on each end
+    n_to_trim = floor(trim * length(x))
+    ## sort the vector
+    x_sorted = sort(x)
+    ## the indices of the elements to trim at the low end
+    lo_idx = n_to_trim
+    ## the indices of the elements to trim at the high end
+    hi_idx = (n - n_to_trim)
+    ## get rid of the lowest elements and highest elements
+    x_trimmed = x_sorted[(lo_idx+1):hi_idx]
+
+    return(mean(x_trimmed))
+}
+
+## should give 2.75
+trimmed_mean(c(-20, 1, 3, 2, 2, 5, 20, 2, 3, 4), trim = .1)
+mean(c(-20, 1, 3, 2, 2, 5, 20, 2, 3, 4), trim = .1)
+## should give -9
+trimmed_mean(c(-20, -20,  20, 2), trim = .25)
+mean(c(-20, -20,  20, 2), trim = .25)
+```
+
+This this function there were three problems.
+
+1. The `lo_idx` was defined wrong
+
+2. The x_trimmed was sorted separately and in a wrong manner. I sorted it in a single line.
+
+3. The sort for `hi_idx` now became unnecessary so I removed it.
+
+## 3. String processing
+
+```{r}
+library(stringr)
+library(dplyr)
+
+process_table <- function(x) {
+  # 1) split into lines (works on raw string)
+  lines <- strsplit(x, "\n", fixed = TRUE)[[1]]
+  
+  # 2) drop padding/header/footer
+  lines <- lines[!str_detect(lines, "^\\|-\\s*$")]
+  lines <- lines[!str_detect(lines, "^\\{\\|")]         # table start
+  lines <- lines[!str_detect(lines, "^!\\s*Rank")]      # header
+  lines <- lines[!str_detect(lines, "^\\|\\}$")]        # table end
+  
+  # 3) keep only data rows (those that start with a single pipe)
+  lines <- lines[str_detect(lines, "^\\|\\s")]
+  
+  # helper to parse one row
+  process_data_line <- function(s) {
+    s <- str_remove(s, "^\\|\\s*")                    # drop leading pipe
+    s <- str_remove_all(s, "\\{\\{[^}]+\\}\\}\\s*")   # remove {{flagicon|...}}
+    parts <- str_split(s, "\\s*\\|\\|\\s*", n = 4)[[1]]
+    parts <- str_trim(parts)
+    if (length(parts) != 4) return(NULL)              # skip malformed
+    
+    # extract city from [[...]] (take the target before any |)
+    city <- str_match(parts[3], "\\[\\[([^\\]|]+)")[,2]
+    if (is.na(city)) return(NULL)
+    
+    tibble(
+      Rank = suppressWarnings(as.integer(parts[1])),
+      `Overall Ranking 2017` = suppressWarnings(as.integer(parts[2])),
+      City = city,
+      `2010 Score` = suppressWarnings(as.numeric(parts[4]))
+    )
+  }
+  
+  # 4) map over lines and bind
+  rows <- lapply(lines, process_data_line)
+  bind_rows(rows)
+}
+
+city_rankings <- '{| class="wikitable sortable"
+|-
+! Rank !! Overall Ranking 2017 !! City !! 2010 Score
+|-
+| 1 || 1 || {{flagicon|Austria}} [[Vienna]] || 108.6
+|-
+| 2 || 2 || {{flagicon|Switzerland}} [[Zürich]] || 108.0
+|-
+| 3 || 4 || {{flagicon|Germany}} [[Munich]] || 107.0
+|-
+| 4 || 6 || {{flagicon|Germany}} [[Düsseldorf]] || 107.2
+|-
+| 5 || 7 || {{flagicon|Germany}} [[Frankfurt]] || 107.0
+|}'
+
+process_table(city_rankings)
+```
+| # | Fix Type            | Description                           |                          |         |
+| - | ------------------- | ------------------------------------- | ------------------------ | ------- |
+| 1 | Input handling      | `read_lines()` → `strsplit()`         |                          |         |
+| 2 | Table cleanup       | Removed hardcoded indices, used regex |                          |         |
+| 3 | Line filtering      | Keep only rows starting with `        | `                        |         |
+| 4 | Wiki markup removal | Strip `{{flagicon                     | ...}}` and leading pipes |         |
+| 5 | Split logic         | Use stable `\                         | \                        | ` split |
+| 6 | City `regex`          | Handle Unicode + `[[]]` safely        |                          |         |
+| 7 | Data structure      | Replace list logic with `tibble()`    |                          |         |
+| 8 | Row binding         | Replace `plyr` with `bind_rows()`     |                          |         |
+
+
+*Acknowledgement:* In this problem I was kind of stuck and the deadline was nearing so I use Chat-GPT to fix the code. This one seemed really hard.
+
+## 4. Gradient descent
+```{r}
+gradient_descent <- function(fn, deriv, start, step_size, epsilon) {
+    x = start
+    while(TRUE) {
+        new_x = x - step_size * deriv(x)
+        if(abs(deriv(new_x)) <= epsilon) {
+            break
+        }
+        x = new_x
+    }
+    return(x)
+}
+
+## should return something close to 0
+gradient_descent(function(x) x^2, function(x) 2 * x , start = 1,
+                 step_size = .1, epsilon = 1e-10)
+```
+
+- There was a `+` in the `new_x` which is changed to `-` as it should be. Now it works!
+
+## 5. Line search
+```{r}
+backtrack_desc <- function(fn, deriv, start, alpha, beta, epsilon) {
+    x = start
+    while(TRUE) {
+        step_size = backtrack(fn, deriv, x, alpha, beta)
+        new_x = x - step_size * deriv(x)
+        if(abs(deriv(new_x)) <= epsilon) {
+            break
+        }
+        x = new_x
+    }
+    return(x)
+}
+
+backtrack <- function(fn, deriv, x, alpha, beta) {
+    t = 1
+    while(fn(x - t * deriv(x)) > (fn(x) - alpha * t * deriv(x)^2)) {
+        t = beta * t
+    }
+    return(t)
+}
+
+## should return something close to 0
+backtrack_desc(function(x) x^2, function(x) 2 * x, start = 10,
+               alpha = .03, beta = .8, epsilon = 1e-10)
+backtrack_desc(function(x) x^2, function(x) 2 * x, start = 1,
+               alpha = .03, beta = .8, epsilon = 1e-10)
+```
+
+- `new_x` should be `x - step_size * deriv(x)`
+- `backtrack` returns nothing so, `step_size` become `NULL`. It should `return (t)`

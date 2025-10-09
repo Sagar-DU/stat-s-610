@@ -1,0 +1,162 @@
+---
+title: "STAT-S 610 Homework 3 code"
+author: "Nahid Hasan Sagar"
+date: "2025-09-20"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Problem 1
+The datasets in question are available at addresses of the form https://www2.census.gov/programs-surveys/cps/datasets/<yyyy>/basic/<month><yy>pub.csv where <yyyy> is a four-digit description of a year (e.g. 2000, 1995), <yy> is a two-digit description of a year (e.g. 00, 95), and <month> is jan, feb, mar, apr, may, jun, jul, aug, sep, oct, nov, dec. (You can look at the files at https://www2.census.gov/programs-surveys/
+cps/datasets/2020/basic/ to see an example).
+
+Supposing that you have a variable year giving the four-digit year and a variable month giving the month, write a line of code that will construct the url where the relevant data can be accessed.
+
+```{r}
+  year <- 2025
+  month <- "mar"
+  url <- paste0("https://www2.census.gov/programs-surveys/cps/datasets/", year, "/basic/", month, substr(year, 3, 4), "pub.csv"
+)
+  url
+```
+
+## Problem 2
+Note that the function read.csv can read files from a url. Write a function that will take as
+arguments a four-digit year and a month (as in the previous question), will download the
+data and return it as a data frame. Since the files are very large, please only download a
+subset of them using the nrows argument to read.csv (e.g. read.csv(<file-name>, nrows
+= 1000)).
+The function should look something like this:
+get_data <- function(year, month) {
+<do stuff>
+<return something>
+}
+
+```{r}
+  get_data <- function(year, month, nrows = 1000) {
+    url <- paste0("https://www2.census.gov/programs-surveys/cps/datasets/", year, "/basic/", month, substr(year, 3, 4), "pub.csv")
+    
+    df <- read.csv(url, nrows = nrows)
+    
+    return(df)
+  }
+
+  get_data(2020, month, nrows = 20)
+```
+
+## Problem 3
+Modify your function so that it checks whether it was given a valid year and month. (Year
+should be 1994 or later and month should be one of the codes specified in the first question.)
+If the year or the month is not valid, print a message saying what the problem was and
+return NA.
+
+```{r}
+  months <- c("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+  get_data_modified <- function(year, month, nrows = 1000) {
+    # Year validity
+    if (year >= 1994) {
+      cat("It's a valid year:", year)
+      if (month %in% months) {
+        df <- read.csv(url, nrows = nrows)
+        return(df)
+      }
+      else {
+        cat("You've entered and invalid month format", month, "\n")
+        return(NA)
+      }
+    }
+    else {
+      cat("You have entered an invalid year", year, "Your year should be between 1944 to 2025\n")
+      return(NA)
+    }
+  }
+  get_data_modified(1993, "jan", nrows = 20)
+```
+
+## Problem 4
+The variable prtage gives the age of the individual surveyed. Modify your function so that
+it takes two additional arguments, maximum age and minimum age, and so that it subsets
+1the dataset to only include rows for which prtage is between the minimum and maximum
+age.
+
+```{r}
+  get_data_with_age <- function(year, month, nrows = 1000, min_age = 0, max_age = 120) {
+    # Check year validity
+    if (year < 1994) {
+      cat("Invalid year:", year, "- must be 1994 or later.\n")
+      return(NA)
+    }
+    
+    # Check month validity
+    if (!(month %in% months)) {
+      cat("Invalid month:", month, "- must be one of", paste(months, collapse = ", "), "\n")
+      return(NA)
+    }
+    
+    # Load data
+    df <- read.csv(url, nrows = nrows)
+    
+    # Subset by age if prtage column exists
+    if (!"prtage" %in% names(df)) {
+      cat("Warning: column 'prtage' not found in dataset.\n")
+      return(df)
+    }
+    
+    df <- subset(df, prtage >= min_age & prtage <= max_age)
+    
+    return(df)
+  }
+  
+  # Example: get March 2020 data, 20 rows, only ages between 30 and 50
+  get_data_with_age(2020, "mar", nrows = 1000, min_age = 30, max_age = 50)
+```
+
+## Problem 5
+Modify your function so that there is an option to write the data to the disk instead of
+returning a data frame object. You will need to use the write.csv function, which also
+requires you to specify an output file name. Make sure that your output file name contains
+information about the year, month, and age range you used.
+
+```{r}
+  get_data_with_age <- function(year, month, nrows = 1000, 
+                              min_age = 0, max_age = 120, 
+                              save_to_disk = FALSE, out_dir = ".") {
+  # Check year validity
+  if (year < 1994) {
+    cat("Invalid year:", year, "- must be 1994 or later.\n")
+    return(NA)
+  }
+  
+  # Check month validity
+  if (!(month %in% months)) {
+    cat("Invalid month:", month, "- must be one of", paste(months, collapse = ", "), "\n")
+    return(NA)
+  }
+    
+  # Load data
+  df <- read.csv(url, nrows = nrows)
+  
+  # Subset by age if prtage exists
+  if ("prtage" %in% names(df)) {
+    df <- subset(df, prtage >= min_age & prtage <= max_age)
+  } else {
+    cat("Warning: 'prtage' column not found in dataset.\n")
+  }
+  
+  # Save to disk if requested
+  if (save_to_disk) {
+    file_name <- paste0("cps_", year, "_", month, "_age", min_age, "-", max_age, ".csv")
+    file_path <- file.path(out_dir, file_name)
+    write.csv(df, file = file_path, row.names = FALSE)
+    cat("Data written to:", file_path, "\n")
+    return(invisible(file_path))  # return file path instead of df
+  }
+  
+  # Otherwise return dataframe
+  return(df)
+}
+  get_data_with_age(2020, "mar", nrows = 200, min_age = 25, max_age = 40, save_to_disk = TRUE)
+```
