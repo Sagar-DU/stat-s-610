@@ -1,0 +1,22 @@
+---
+title: "STAT-S 610 Homework 6"
+author: "Nahid Hasan Sagar"
+date: "2025-10-10"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Question 1: 
+What does your commit history look like now? What branches do you have, and what commits are they pointing to? Where does HEAD point? (You haven't done very much yet; this question is mostly to give you a reference to compare against later.) – Make a new branch called specify-num-nonzero by typing git branch specify-num-nonzero. The idea is going to be that this branch is going to contain code that is modified so that you can specify the number of sequences that have a non-zero value for each site. You can check that you made the branch by typing git branch, which should give you output
+
+* main
+  specify-num-nonzero
+
+which indicates that you have two branches, one called main and one called specify-num-nonzero, and that main is checked out, i.e., HEAD points to main.
+
+You can also check this by running git log -graph -branches, and you may find it helpful to run this command periodically throughout the assignment.
+
+– Check out specify-num-nonzero by typing git checkout specify-num-nonzero.
